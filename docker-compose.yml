@@ -1,6 +1,21 @@
 version: '3'
 
 services:
-  kong-migration:
+  kong-migration1:
     image: ownkong
-    command: "bash"
+    environment:
+      - KONG_DATABASE=cassandra
+      - KONG_CASSANDRA_CONTACTPOINTS=104.197.53.25,107.178.211.223
+      - KONG_CASSANDRA_USERNAME=kong
+      - KONG_CASSANDRA_PASSWORD=kong
+      - KONG_CASSANDRA_STRATEGY=NetworkTopologyStrategy
+      - KONG_CASSANDRA_PROPAGATION=2
+      - KONG_CASSANDRA_FREQUENCY=1
+      - KONG_DAEMON=off
+      - KONG_CASSANDRA_FACTOR=2
+    command: "kong start"
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+      - "8444:8444"
