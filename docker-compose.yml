@@ -1,8 +1,8 @@
 version: '3'
 
 services:
-  kong-migration1:
-    image: ownkong
+  kong1:
+    image: podgroup/kong
     environment:
       - KONG_DATABASE=cassandra
       - KONG_CASSANDRA_CONTACTPOINTS=146.148.90.7,23.236.50.48
@@ -13,7 +13,9 @@ services:
       - KONG_CASSANDRA_FREQUENCY=1
       - KONG_DAEMON=off
       - KONG_CASSANDRA_FACTOR=2
-    command: "kong start"
+      - KONG_CASSANDRA_CONSISTENCY=ALL
+      - CASSANDRA_ADMIN=cassandra
+      - CASSANDRA_ADMIN_PASSWORD=prueba
     ports:
       - "8000:8000"
       - "8443:8443"

@@ -39,11 +39,23 @@ else
         sed -i -e "s/^\#cassandra_repl_factor = 1/cassandra_repl_factor = $KONG_CASSANDRA_FACTOR/" $KONG_CONFIG
 fi
 
+if [ -z "$KONG_CASSANDRA_KEYSPACE" ]; then
+        KONG_CASSANDRA_KEYSPACE="kong"
+else
+        sed -i -e "s/^\#cassandra_keyspace = kong/cassandra_keyspace = $KONG_CASSANDRA_KEYSPACE/" $KONG_CONFIG
+fi
+
 
 if [ -z "$KONG_CASSANDRA_PROPAGATION" ]; then
         echo "Propagation is 0"
 else
         sed -i -e "s/^\#db_update_propagation = 0/db_update_propagation = $KONG_CASSANDRA_PROPAGATION/" $KONG_CONFIG
+fi
+
+if [ -z "$KONG_CASSANDRA_CONSISTENCY" ]; then
+        echo "Consistency is ONE"
+else
+        sed -i -e "s/^\#cassandra_consistency = ONE/cassandra_consistency = $KONG_CASSANDRA_CONSISTENCY/" $KONG_CONFIG
 fi
 
 if [ -z "$KONG_CASSANDRA_FREQUENCY" ]; then
@@ -52,6 +64,8 @@ else
         sed -i -e "s/^\#db_update_frequency = 5/db_update_frequency = $KONG_CASSANDRA_FREQUENCY/" $KONG_CONFIG
 fi
 
+sed -i -e "s/^\#cassandra_data_centers = dc1:2,dc2:3/cassandra_data_centers = dc1:2/" $KONG_CONFIG
+
 if [ -z "$KONG_DAEMON" ]; then
         echo "Daemon is on"
 else
@@ -59,19 +73,29 @@ else
     sed -i -e "s/^\#nginx_daemon = on/nginx_daemon = $KONG_DAEMON/" $KONG_CONFIG
   fi
 fi
+count=0
+exist="no"
+IFS=',' read -ra IP <<< "$KONG_CASSANDRA_CONTACTPOINTS"
+for i in "${IP[@]}"; do
+    cqlsh $i --cqlversion="3.4.4" -u ${CASSANDRA_ADMIN} -p ${CASSANDRA_ADMIN_PASSWORD} \
+    -e "CREATE ROLE IF NOT EXISTS ${KONG_CASSANDRA_USERNAME} WITH PASSWORD = '${KONG_CASSANDRA_PASSWORD}' AND LOGIN = true;"
+    KEYSPACE=$(cqlsh $i --cqlversion="3.4.4" -u ${CASSANDRA_ADMIN} -p ${CASSANDRA_ADMIN_PASSWORD} \
+    -e "SELECT count(*) FROM system_schema.keyspaces WHERE keyspace_name='${KONG_CASSANDRA_KEYSPACE}';" 2> /dev/null | \
+    head -n 4 | tail -n 1 | sed -e 's/^[ \t]*//')
+    intKEYSPACE=$((KEYSPACE))
+    if [[ "$intKEYSPACE" -gt 0 ]]; then
+      exist="yes"
+    fi
+    count=$[count+1]
 
-#TODO - env username cassandra user
-cqlsh 146.148.90.7 --cqlversion="3.4.4" -u "cassandra" -p "prueba" -e "CREATE ROLE IF NOT EXISTS kong WITH PASSWORD = 'kong' AND LOGIN = true;"
-cqlsh 146.148.90.7 --cqlversion="3.4.4" -u "cassandra" -p "prueba" -e "SELECT * FROM system_schema.keyspaces WHERE keyspace_name='kong';" > output.txt
+done
 
-#change file
-if [[ $(wc -l < output.txt) -eq 2 ]]; then
-  echo "Migrating"
+if [[ ${exist}="no" ]]; then
   kong migrations up
 fi
 
-kong start --conf $KONG_CONFIG --vv
 
+kong start --conf $KONG_CONFIG --vv
 
 
 exec "$@"
