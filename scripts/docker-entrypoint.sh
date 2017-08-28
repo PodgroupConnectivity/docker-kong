@@ -60,5 +60,18 @@ else
   fi
 fi
 
+#TODO - env username cassandra user
+cqlsh 146.148.90.7 --cqlversion="3.4.4" -u "cassandra" -p "prueba" -e "CREATE ROLE IF NOT EXISTS kong WITH PASSWORD = 'kong' AND LOGIN = true;"
+cqlsh 146.148.90.7 --cqlversion="3.4.4" -u "cassandra" -p "prueba" -e "SELECT * FROM system_schema.keyspaces WHERE keyspace_name='kong';" > output.txt
+
+#change file
+if [[ $(wc -l < output.txt) -eq 2 ]]; then
+  echo "Migrating"
+  kong migrations up
+fi
+
+kong start --conf $KONG_CONFIG --vv
+
+
 
 exec "$@"

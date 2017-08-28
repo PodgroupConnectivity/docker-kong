@@ -14,7 +14,7 @@ curl -Lso /tmp/kong.deb \
 
 RUN mv /etc/kong/kong.conf.default ${KONG_CONFIG}
 
-RUN apt-get install python-pip -y && pip install cqlsh
+RUN apt-get install python-pip -y && pip install cqlsh==5.0.4
 RUN apt-get remove --purge python-pip -y
 
 ADD scripts/docker-entrypoint.sh /docker-entrypoint.sh

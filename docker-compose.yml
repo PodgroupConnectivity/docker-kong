@@ -5,7 +5,7 @@ services:
     image: ownkong
     environment:
       - KONG_DATABASE=cassandra
-      - KONG_CASSANDRA_CONTACTPOINTS=104.197.53.25,107.178.211.223
+      - KONG_CASSANDRA_CONTACTPOINTS=146.148.90.7,23.236.50.48
       - KONG_CASSANDRA_USERNAME=kong
       - KONG_CASSANDRA_PASSWORD=kong
       - KONG_CASSANDRA_STRATEGY=NetworkTopologyStrategy
