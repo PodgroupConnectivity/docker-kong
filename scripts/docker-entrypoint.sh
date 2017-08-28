@@ -92,6 +92,7 @@ done
 
 if [[ ${exist}="no" ]]; then
   kong migrations up
+  sleep 20
 fi
 
 
