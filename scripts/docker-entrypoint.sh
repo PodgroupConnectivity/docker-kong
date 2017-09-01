@@ -74,29 +74,30 @@ else
   fi
 fi
 count=0
-exist="no"
+exist=0 #no
 IFS=',' read -ra IP <<< "$KONG_CASSANDRA_CONTACTPOINTS"
 for i in "${IP[@]}"; do
     cqlsh $i --cqlversion="3.4.4" -u ${CASSANDRA_ADMIN} -p ${CASSANDRA_ADMIN_PASSWORD} \
     -e "CREATE ROLE IF NOT EXISTS ${KONG_CASSANDRA_USERNAME} WITH PASSWORD = '${KONG_CASSANDRA_PASSWORD}' AND LOGIN = true;"
-    KEYSPACE=$(cqlsh $i --cqlversion="3.4.4" -u ${CASSANDRA_ADMIN} -p ${CASSANDRA_ADMIN_PASSWORD} \
+    KEYSPACE="$(cqlsh $i --cqlversion="3.4.4" -u ${CASSANDRA_ADMIN} -p ${CASSANDRA_ADMIN_PASSWORD} \
     -e "SELECT count(*) FROM system_schema.keyspaces WHERE keyspace_name='${KONG_CASSANDRA_KEYSPACE}';" 2> /dev/null | \
-    head -n 4 | tail -n 1 | sed -e 's/^[ \t]*//')
+    head -n 4 | tail -n 1 | sed -e 's/^[ \t]*//')"
+    echo $KEYSPACE
     intKEYSPACE=$((KEYSPACE))
     if [[ "$intKEYSPACE" -gt 0 ]]; then
-      exist="yes"
+      exist=1
     fi
     count=$[count+1]
 
 done
+echo $intKEYSPACE
 
-if [[ ${exist}="no" ]]; then
+if [[ "$exist" -eq 0 ]]; then
+  echo "Migrating "${exist}
   kong migrations up
-  sleep 60
+  sleep 120
+  exec kong start --conf $KONG_CONFIG --vv
+
 fi
 
-
-kong start --conf $KONG_CONFIG --vv
-
-
-exec "$@"
+exec kong start --conf $KONG_CONFIG --vv
